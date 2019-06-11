@@ -345,14 +345,28 @@ También podemos ver como es lógico que los coeficientes de la corrupción o de
 ****
 # Representación de los resultados a partir de tablas y gráficas
 ****
+En primer lugar veremos gráficamente la representación del nivel de felicidad entre los países con una renta per cápita por debajo de la media y los que la tienen por encima de la media.
+```{r}
+boxplot(paisesPobres$Life.Ladder, paisesRicos$Life.Ladder, names = c("Países pobres", "Países ricos"), ylab="Nivel de felicidad")
+```
+Se puede ver en este diagrama de cajas como el nivel de felicidad de los países ricos es claramente superior al nivel de felicidad de los países pobres. Haremos lo mismo para la esperanza de vida:
+```{r}
+boxplot(paisesEVBaja$Life.Ladder, paisesEVAlta$Life.Ladder, names = c("Países con esperanza de vida baja", "Países con esperanza de vida alta"), ylab="Nivel de felicidad")
+```
+De nuevo podemos ver como la esperanza de vida influye en el nivel de felicidad, siendo claramente superior aquel correspondiente a los países con una esperanza de vida más alta. 
 
+Veremos ahora una distribución de la felicidad en los distintos países para el año 2018:
+```{r}
+hist(data$Life.Ladder[data$Year=="2018"], xlab = "Nivel de felicidad", main = "Distribución de la felicidad en el año 2018") #distribucion de la felicidad
+```
+Podemos ver como la distribución de la felicidad parece seguir una especie de campana de Gauss, estando la mayoría de países entre el 4 y el 6.5.
 
 ****
 # Conclusiones
 ****
 A la vista de la limpieza y del análisis de datos realizados, podemos concluir lo siguiente:
 
-*Se ha conseguido realizar un análisis de datos sobre un conjunto que contenía muchos valores nulos. Esto ha sido posible gracias a una eficiente limpieza de los datos y a la utilización del método de los k-vecinos más próximos para rellenar los datos que faltaban.
+* Se ha conseguido realizar un análisis de datos sobre un conjunto que contenía muchos valores nulos. Esto ha sido posible gracias a una eficiente limpieza de los datos y a la utilización del método de los k-vecinos más próximos para rellenar los datos que faltaban.
 
 * No se han podido comprobar las hipótesis de normalidad y homocedasticidad. No obstante, hemos supuesto que los datos eran normales utilizando el Teorema Central del Límite.
 
@@ -361,3 +375,8 @@ A la vista de la limpieza y del análisis de datos realizados, podemos concluir 
 * También pudimos realizar una predicción del nivel de felicidad en función de varios de los indicadores utilizando un método de regresión lineal. El modelo generado podría ser de utilidad para evaluar países que no estén incluidos en este estudio y realizar predicciones futuras.
 
 * Por último, hemos realizado una correlación que nos ha permitido observar que el apoyo social, la calidad de la democracia y la eficacia del gobierno son las variables más importantes a la hora de medir la felicidad. También hemos podido ver que una mayor esperanza de vida y una mayor renta per cápita influyen positivamente a la hora de tener una mayor felicidad. 
+
+****
+# Contribuciones
+****
+La práctica ha sido desarrollada de forma individual por Gabriel Quintairos Rial. Por tanto los 3 apartados requeridos en el enunciado: "Investigación previa", "Redacción de las respuestas" y "Desarrollo código" tienen como integrante a Gabriel Quintairos Rial.

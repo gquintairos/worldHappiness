@@ -150,3 +150,9 @@ for (i in 4:(ncol(data)-2)) {
   }
 }
 print(matrizCorrelaciones)
+
+
+##gráficas y tablas
+boxplot(paisesPobres$Life.Ladder, paisesRicos$Life.Ladder, names = c("Países pobres", "Países ricos"), ylab="Nivel de felicidad") #diferencia de felicidad entre ricos y pobres
+boxplot(paisesEVBaja$Life.Ladder, paisesEVAlta$Life.Ladder, names = c("Países con esperanza de vida baja", "Países con esperanza de vida alta"), ylab="Nivel de felicidad") #diferencia de felicidad según esperanza de vida
+hist(data$Life.Ladder[data$Year=="2018"]) #distribucion de la felicidad
