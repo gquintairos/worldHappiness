@@ -6,7 +6,7 @@ output:
   pdf_document:    
     toc: true
     number_sections: true
-    toc_depth: 2
+    toc_depth: 3
 ---
 
 ```{r setup, include=FALSE}
@@ -173,6 +173,191 @@ boxplot.stats(data$Delivery.Quality)$out
 
 Podemos ver que hay bastantes variables que tienen valores extremos, como por ejemplo la esperanza de vida, la percepción de la corrupción o las emociones negativas. No obstante, estos valores en su apariencia podrían ser perfectamente reales, ya que proceden de países subdesarrollados donde la esperanza de vida es muy baja, de países bajo dictaduras o gobiernos que no tienen la confianza de sus ciudadanos o donde hay guerras o enfrentamientos violentos. Por ello, la decisión con respecto a estos valores es dejarlos tal y como están, finalizando de esta forma la parte de limpieza de los datos.
 
+## Exportación de los datos
+Con la limpieza de datos que se ha realizado, crearemos un nuevo fichero Excel donde se recoja el nuevo dataset creado. Estará en "data/WorldHappinessReport_trasLimpieza.xls".
+```{r}
+write.xlsx(data, "C:/Users/user/Documents/Máster Big Data/Tipología y ciclo de vida de los datos/Prácticas/Práctica2/data/WorldHappinessReport_trasLimpieza.xls", row.names = FALSE)
+```
+
+
 ****
 # Análisis de los datos
 ****
+El objetivo del análisis de datos será tratar de obtener conocimiento a partir de la información que tenemos y tratar de responder a posibles preguntas planteadas.
+
+## Análisis descriptivo
+El análisis descriptivo comprende el cálculo de valores a través de la propia muestra. Dentro de este análisis se recogen las medidas de tendencia central y las medidas de dispersión.
+Para ver un resumen del análisis estadístico, utilizaremos la función summary de R:
+```{r}
+summary(data)
+```
+
+
+## Análisis inferencial
+El análisis inferencial pretende modelar los datos. Con ello se podrán realizar inferencias, predicciones, clasificaciones, agrupaciones, etc. 
+
+### Selección de los grupos de datos que se quieren analizar
+En primer lugar seleccionaremos los grupos de nuestro dataset que podría ser interesante analizar o comparar:
+```{r}
+#Datos por año
+data2005 <- data[data$Year == "2005",]
+data2006 <- data[data$Year == "2006",]
+data2007 <- data[data$Year == "2007",]
+data2008 <- data[data$Year == "2008",]
+data2009 <- data[data$Year == "2009",]
+data2010 <- data[data$Year == "2010",]
+data2011 <- data[data$Year == "2011",]
+data2012 <- data[data$Year == "2012",]
+data2013 <- data[data$Year == "2013",]
+data2014 <- data[data$Year == "2014",]
+data2015 <- data[data$Year == "2015",]
+data2016 <- data[data$Year == "2016",]
+data2017 <- data[data$Year == "2017",]
+data2018 <- data[data$Year == "2018",]
+
+# Paises por renta per capita
+paisesRicos <- data[data$Log.GDP.per.capita >= mean(data$Log.GDP.per.capita),]
+paisesPobres <- data[data$Log.GDP.per.capita < mean(data$Log.GDP.per.capita),]
+
+# Paises por esperanza de vida
+paisesEVAlta <- data[data$Healthy.life.expectancy.at.birth >= mean(data$Healthy.life.expectancy.at.birth),]
+paisesEVBaja <- data[data$Healthy.life.expectancy.at.birth < mean(data$Healthy.life.expectancy.at.birth),]
+```
+Realizamos una primera agrupación por año, ya que podría ser interesante para ver una evolución histórica. Al hacerla, vemos que para los años 2005 y 2006 hay muy pocos datos, así que no se tendrán en cuenta.
+
+La segunda agrupación la realizamos por renta per cápita, agrupando a los países con una renta por encima de la media por una parte y a los que la tienen por debajo de la media en otra. Podemos ver que hay más "países ricos" que "países pobres".
+
+La última agrupación se realiza por esperanza de vida, agrupando al igual que en el caso anterior. Por una parte estarán los países con una esperanza de vida superior a la media y por otra los que la tienen inferior a la media. Vemos que hay una mayoría de países con esperanza de vida superior a la media. 
+
+### Comprobación de la normalidad y homogeneidad de la varianza
+Para realizar la comprobación de la normalidad utilizaremos el Shapiro-Test, por ser uno de los métodos más robutos que permiten hacerlo. 
+
+Este test asume como hipótesis nula que la población está normalmente distribuida. Por tanto, si el p-valor es menor que un $\alpha$ dado, en nuestro caso $\alpha$ = 0.05, se rechazará la hipótesis nula y se concluirá que los resultados no siguen una distribución normal.
+```{r}
+##Comprobacion de la normalidad y homogeneidad de la varianza
+alpha = 0.05
+col.names = colnames(data)
+for (i in 1:ncol(data)) {
+  if (i == 1) cat("Variables que no siguen una distribución normal:\n")
+  if (is.integer(data[,i]) | is.numeric(data[,i])) {
+    p_val = shapiro.test(data[,i])$p.value
+    if (p_val < alpha) {
+      cat(col.names[i])
+      # Format output
+      if (i < ncol(data) - 1) cat(", ")
+      if (i %% 3 == 0) cat("\n")
+    }
+  }
+}
+```
+A la vista de la aplicación del test a las variables numéricas, podemos ver que se rechaza en todas la hipótesis nula y se concluye que los resultados no siguen una distribución normal. Una posición conservadora nos obligaría a rechazar la normalidad de los datos. No obstante, aplicando el Teorema Central del Límite y al tener un número de registros los suficientemente grande, podremos asumir la normalidad.
+
+Para realizar la comprobación de la homogeneidad de la varianza, también llamada homocedasticidad, utilizaremos el Test de Fligner-Killeen. En este test la hipotesis nula se corresponde con que ambas varianzas son iguales. 
+```{r}
+##Comprobacion de la homocedasticidad
+fligner.test(x = list(paisesRicos$Life.Ladder,paisesPobres$Life.Ladder))
+fligner.test(x = list(paisesEVAlta$Life.Ladder,paisesEVBaja$Life.Ladder))
+```
+A la vista de que ambos p-valores son bajísimos, rechazaremos la hipótesis nula y no podremos considerar que exista homocedasticidad.
+
+### Pruebas estadísticas
+
+#### ¿El dinero da la felicidad?
+La primera prueba que vamos a realizar será un contraste de hipótesis entre los grupos correspondientes a los países con rentas per cápita por encima de la media y a aquellos que tienen las rentas per cápita por debajo de la media. 
+
+Dado que no se pudo comprobar la homocedasticidad, utilizaremos para dicho contraste el test paramétrico de Mann-Whitney. En este test la hipótesis nula asume que las distribuciones de ambos grupos de datos son las mismas. Por lo tanto, solo si el p-valor es menor al nivel $\alpha$ = 0.05 se rechazará la hipótesis nula y se concluirá que existen diferencias estadísticamente significativas entre el nivel de felicidad en función de la renta per cápita.
+```{r}
+##Contraste de hipotesis entre rentas altas y bajas para ver si siguen la misma distribución
+wilcox.test(paisesRicos$Life.Ladder, paisesPobres$Life.Ladder)
+```
+Dado que el p-valor es menor al nivel de significación, se rechaza la hipótesis nula y se puede concluir que existen diferencias entre la felicidad en los países con una renta per cápita por encima de la media y aquellos que están por debajo.
+```{r}
+mean(paisesRicos$Life.Ladder)
+mean(paisesPobres$Life.Ladder)
+```
+Observando ambas medias, se puede ver que el dinero sí da la felicidad (al menos estadísticamente hablando).
+
+#### Predicción del nivel de felicidad
+Un objetivo muy interesante sería poder predecir el nivel de felicidad a partir de los indicadores recogidos en este estudio. Para ello utilizaremos un modelo de regresión lineal que nos permita realizar predicciones sobre esta variable.
+
+En este modelo incluiremos como variable dependiente la felicidad y como variables independientes todas las demás (excepto el año, el nombre del país y las desviaciones, ya que poco importan). Posteriormente tendremos en cuenta el AIC o Criterio de Información de Akaike para escoger el mejor modelo. El mejor modelo será aquel que tenga un valor más bajo del AIC, ya que tendrá las variables óptimas para explicar la variable dependiente sin que sobre ni falte información. Para ello utilizaremos la función step de R, la cual irá eliminando variables hasta quedarnos con el modelo que tenga el mejor AIC. 
+```{r}
+##regresión lineal para predecir el nivel de felicidad
+modelo <- lm(Life.Ladder ~ . - Year - Country.name - Standard.deviation.of.ladder.by.country.year - Standard.deviation.Mean.of.ladder.by.country.year, data = data)
+step(modelo)
+```
+Vemos que el mejor modelo se obtiene quitando las variables Negative.affect, Democratic.Quality y Delivery.Quality. Por tanto, creamos dicho modelo para hacer predicciones.
+```{r}
+modeloOptimo <- lm(formula = Life.Ladder ~ Log.GDP.per.capita + Social.support + Healthy.life.expectancy.at.birth + Freedom.to.make.life.choices + Generosity + Perceptions.of.corruption + Positive.affect + Confidence.in.national.government, data = data)
+```
+Con este nuevo modelo, nos inventaremos dos países y realizaremos predicciones sobre sus niveles de felicidad:
+```{r}
+paisInventadoFeliz <- data.frame(
+  Log.GDP.per.capita = 13,
+  Social.support = 0.99,
+  Healthy.life.expectancy.at.birth = 100,
+  Freedom.to.make.life.choices = 0.99,
+  Generosity = 0.8,
+  Perceptions.of.corruption = 0.01,
+  Positive.affect = 0.99,
+  Confidence.in.national.government = 0.95
+)
+
+paisInventadoInfeliz <- data.frame(
+  Log.GDP.per.capita = 2.5,
+  Social.support = 0.05,
+  Healthy.life.expectancy.at.birth = 38,
+  Freedom.to.make.life.choices = 0.1,
+  Generosity = 0.01,
+  Perceptions.of.corruption = 0.95,
+  Positive.affect = 0.04,
+  Confidence.in.national.government = 0.05
+)
+predict(modeloOptimo, paisInventadoFeliz)
+predict(modeloOptimo, paisInventadoInfeliz)
+```
+Como podemos ver, el modelo funciona bien para estos dos casos. En el país que tiene los buenos indicadores predice un nivel de felicidad superior a 9. En cambio, en el país infeliz llega incluso a producir un valor negativo de felicidad. 
+
+#### ¿Qué es lo que nos hace más felices?
+Considerando todos los indicadores de los que consta este estudio, queremos saber cuáles son los más importantes a la hora de calcular nuestro nivel de felicidad. Para esto, realizaremos un análisis de la correlación entre las variables. Dado que nuestros datos no cumplen la hipótesis de homocedasticidad, utilizaremos el Coeficiente de Correlación de Spearman. 
+```{r message=FALSE, warning=FALSE}
+matrizCorrelaciones <- matrix(nc = 2, nr = 0)
+colnames(matrizCorrelaciones) <- c("coeficiente", "p-valor")
+# Coeficiente de correlacion de las variables independientes con respecto a la felicidad
+for (i in 4:(ncol(data)-2)) {
+  if (is.integer(data[,i]) | is.numeric(data[,i])) {
+    spearman_test = cor.test(data[,i],data$Life.Ladder,method = "spearman")
+    corr_coef = spearman_test$estimate
+    p_val = spearman_test$p.value
+    # Add row to matrix
+    pair = matrix(ncol = 2, nrow = 1)
+    pair[1][1] = corr_coef
+    pair[2][1] = p_val
+    matrizCorrelaciones <- rbind(matrizCorrelaciones, pair)
+    rownames(matrizCorrelaciones)[nrow(matrizCorrelaciones)] <- colnames(data)[i]
+  }
+}
+print(matrizCorrelaciones)
+```
+A la vista de los resultados podemos ver que las variables con más peso estadístico con respecto a la felicidad son el apoyo social, la calidad de la democracia y la eficacia del gobierno. 
+También podemos ver como es lógico que los coeficientes de la corrupción o de las emociones negativas son negativos (su ausencia aumenta la felicidad) y que el de la renta per cápita o la esperanza de vida son los más positivos (su presencia aumenta la felicidad).
+
+****
+# Representación de los resultados a partir de tablas y gráficas
+****
+
+
+****
+# Conclusiones
+****
+A la vista de la limpieza y del análisis de datos realizados, podemos concluir lo siguiente:
+
+*Se ha conseguido realizar un análisis de datos sobre un conjunto que contenía muchos valores nulos. Esto ha sido posible gracias a una eficiente limpieza de los datos y a la utilización del método de los k-vecinos más próximos para rellenar los datos que faltaban.
+
+* No se han podido comprobar las hipótesis de normalidad y homocedasticidad. No obstante, hemos supuesto que los datos eran normales utilizando el Teorema Central del Límite.
+
+* Se ha podido comprobar que estadísticamente hablando el dinero da la felicidad. Por tanto la pregunta queda respondida. Se ha podido comprobar que la distribución de la felicidad es significativamente diferente entre los países que tienen una renta per cápita superior a la media y los que la tienen inferior. Además, observando los valores de felicidad para dichos países, se observa que los de los países con rentas superiores son mayores.
+
+* También pudimos realizar una predicción del nivel de felicidad en función de varios de los indicadores utilizando un método de regresión lineal. El modelo generado podría ser de utilidad para evaluar países que no estén incluidos en este estudio y realizar predicciones futuras.
+
+* Por último, hemos realizado una correlación que nos ha permitido observar que el apoyo social, la calidad de la democracia y la eficacia del gobierno son las variables más importantes a la hora de medir la felicidad. También hemos podido ver que una mayor esperanza de vida y una mayor renta per cápita influyen positivamente a la hora de tener una mayor felicidad. 
