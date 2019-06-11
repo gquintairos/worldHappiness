@@ -1,0 +1,178 @@
+---
+title: "Tipología y ciclo de vida de los datos - Práctica 2"
+author: "Gabriel Quintairos Rial"
+date: "11 de junio de 2019"
+output: 
+  pdf_document:    
+    toc: true
+    number_sections: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+****
+# Descripción del dataset
+****
+El conjunto de datos con el que se trabajará en esta práctica se ha obtenido a través del repositorio Kaggle: https://www.kaggle.com/PromptCloudHQ/world-happiness-report-2019 
+
+En concreto, este dataset está basado en el World Happiness Report del año 2019: https://worldhappiness.report/ed/2019/
+
+Como los datos que había en el repostorio de Kaggle habían sido preparados y se había eliminado bastante información, se ha optado por trabajar con el conjunto de datos original, disponible de forma libre aquí: https://s3.amazonaws.com/happiness-report/2019/Chapter2OnlineData.xls
+
+En este informe se miden una serie de indicadores en donde se clasifican 156 países en función de los felices que se sienten sus habitantes. Para calcular estos indicadores se establece un país imaginario llamado "Distopía" en el cual sus habitantes son los menos felices del mundo. Dicho país será la referencia para cada uno de los indicadores, siendo todos sus valores igual a cero en este caso de máxima infelicidad. Por tanto, los indicadores para los países que forman parte del informe serán siempre cero o positivos. 
+
+## Variables
+El conjunto de datos está constituido por 26 indicadores (columnas) de un total de 156 países y para varios años, teniendo un total de 1704 filas. Los indicadores son los siguientes:
+
+* __Country name:__ nombre del país.
+
+* __Year:__ año al que pertenece el dato.
+
+* __Life Ladder:__ valoración del nivel de felicidad.
+
+* __Log GDP per capita:__ logaritmo decimal de la renta media per cápita de cada país.
+
+* __Social support:__ medida en la que el apoyo social contribuye a la valoración de la felicidad.
+
+* __Healthy life expectancy at birth:__ esperanza de vida al nacimiento (años).
+ 
+* __Freedom to make live choices:__ medida en la que las libertades individuales y colectivas contribuyen a la valoración de la felicidad.
+
+* __Generosity:__ medida en la que la generosidad contribuye a la valoración de la felicidad.
+
+* __Perceptions of corruption:__ medida en la que la percepción de la corrupción contribuye a la valoración de la felicidad.
+
+* __Positive affect:__ medida de las emociones positivas.
+
+* __Negative affect:__ medida de las emociones negativas.
+
+* __Confidence in national government:__ nivel de confianza en el gobierno nacional.
+
+* __Democratic quality:__ valoración de la calidad de la democracia en términos de estabilidad política y ausencia de violencia.
+
+* __Delivery quality:__ valor medio de las valoraciones dadas a la eficacia del gobierno nacional, calidad de las leyes existentes en el país, aplicación de las leyes y control de la corrupción.
+
+* __Standard deviation of ladder by country-year:__ desviación estándar del nivel de felicidad.
+
+* __Standard deviation/Mean of ladder by country-year:__ desviación estándar / media del nivel de felicidad.
+
+* __GINI index (World Bank estimate):__ desigualdad de los ingresos dentro del país. 
+ 
+* __GINI index (World Bank estimate), average 2000-16:__ media de la desigualdad de los ingresos dentro del país en el periodo 2000-2016.
+
+* __gini of household income reported in Gallup, by wp5-year:__ renta media obtenida por hogar
+
+* __Most people can be trusted, Gallup:__ cantidad de personas en las que podrías confiar.
+
+* __Most people can be trusted, WVS round 1981-1984:__ cantidad de personas en las que podrías confiar (media del periodo 1981-1984).
+
+* __Most people can be trusted, WVS round 1989-1993:__ cantidad de personas en las que podrías confiar (media del periodo 1989-1993).
+
+* __Most people can be trusted, WVS round 1994-1998:__ cantidad de personas en las que podrías confiar (media del periodo 1994-1998).
+
+* __Most people can be trusted, WVS round 1999-2004:__ cantidad de personas en las que podrías confiar (media del periodo 1999-2004).
+
+* __Most people can be trusted, WVS round 2005-2009:__ cantidad de personas en las que podrías confiar (media del periodo 2005-2009).
+
+* __Most people can be trusted, WVS round 2010-2014:__ cantidad de personas en las que podrías confiar (media del periodo 2010-2014).
+
+## Importancia del dataset y objetivos del análisis
+Este conjunto de datos es muy importante pues nos permite medir las diferencias y similitudes existentes entre un gran número de países. Además, también nos permitirá ver una evolución temporal dentro de algunos de los indicadores al disponer de datos de años anteriores. 
+
+El World Happiness Report es un estudio realizado anualmente por la ONU desde el 2012 y que tiene un gran valor para muchas organizaciones, ya que permite detectar carencias y puntos a mejorar en varios lugares del mundo.
+
+
+****
+# Integración y selección de los datos de interés
+****
+
+## Integración
+
+No ha sido necesario realizar un proceso de integración en esta práctica. Esto es debido a que a la hora de seleccionar el conjunto de datos, se optó por utilizar un dataset más completo en lugar del repositorio de Kaggle. Haciendo esto conseguimos el mismo resultado que haciendo una integración vertical, ya que conseguimos tener un mayor número de registros y de variables dentro la información que será objeto de análisis. 
+
+## Selección de los datos de interés
+
+Para proceder a la selección de los datos de interés, cargaremos el fichero Excel que contiene los datos en un data table de R:
+```{r results='hide', message=FALSE, warning=FALSE}
+library(xlsx)
+data <- read.xlsx("C:/Users/user/Documents/Máster Big Data/Tipología y ciclo de vida de los datos/Prácticas/Práctica2/data/WorldHappinessReport.xls", 1, stringsAsFactors=FALSE)
+```
+
+Descartaremos todas las variables correspondientes a índices de GINI. En primer lugar porque varias de ellas son nulas en un gran número de países, siendo por tanto poco útiles en un estudio. En segundo lugar porque otras de ellas son datos calculados (medias de años anteriores) que no nos aportan nada, ya que durante el propio análisis podríamos ser capaces de realizar dichos cálculos si fuesen necesarios. Por tanto, reduciremos la dimensionalidad de los datos, lo cual simplifica el dataset y mejora el rendimiento.
+```{r}
+data <- data[,-17:-26]
+```
+
+Ahora veremos cómo trata R los datos que tenemos en nuestro dataset, por si fuese necesario realizar algún ajuste:
+```{r}
+str(data)
+```
+
+Podemos observar que los tipos de datos son los correctos. Gracias a haber utilizado el parámetro "stringsAsFactors" en la carga del fichero Excel, el nombre de los países se ha cargado correctamente. Por tanto no será necesario realizar ninguna transformación más en esta parte.
+
+****
+# Limpieza de los datos
+****
+
+## Ceros y elementos vacíos
+
+Comenzaremos viendo cuántos ceros hay por cada atributo. En caso de haber alguno, deberíamos analizarlo ya que no necesariamente deberá ser un error. Esto es debido a que la puntuación dada a alguno de los indicadores podría correctamente corresponderse con el valor cero.
+```{r}
+sapply(data, function(x) sum(x==0, na.rm = TRUE))
+```
+
+Como podemos ver, no hay ningún cero en ninguna de nuestras variables. Por tanto, ahora veremos cuántos valores nulos hay para cada indicador:
+```{r}
+sapply(data, function(x) sum(is.na(x)))
+```
+
+Vemos en el resultado obtenido que son numerosos los campos que tienen valores nulos o 'NA'. En concreto para alguna variable como la confianza en el gobierno nacional, dicha cantidad de valores supera el 10% de los registros. Este gran número de valores nulos podrá causar problemas a la hora de aplicar algoritmos de análisis de datos o de intentar representar la información. Una posible solución podría ser eliminar aquellos registros que contienen indicadores nulos pero, de esta forma, estaríamos perdiendo mucha información.
+
+Para resolverlo, utilizaremos la técnica de los k vecinos más próximos (kNN-imputation). Esta técnica está basada en la similitud o la diferencia entre los registros y trata de asignar un valor aproximado a aquellos valores nulos. Se utiliza bajo la hipótesis de que nuestros registros guardan una relación entre ellos, lo cual es realmente cierto ya que cada registro representa una evolución temporal de varios países del mundo y se espera que tengan algunas similitudes. Como es mejor trabajar con valores aproximados que con datos nulos, realizamos la aproximación:
+```{r message=FALSE, warning=FALSE}
+library(VIM)
+data$Log.GDP.per.capita <- kNN(data)$Log.GDP.per.capita
+data$Social.support <- kNN(data)$Social.support
+data$Healthy.life.expectancy.at.birth <- kNN(data)$Healthy.life.expectancy.at.birth
+data$Freedom.to.make.life.choices <- kNN(data)$Freedom.to.make.life.choices
+data$Generosity <- kNN(data)$Generosity
+data$Perceptions.of.corruption <- kNN(data)$Perceptions.of.corruption
+data$Positive.affect <- kNN(data)$Positive.affect
+data$Negative.affect <- kNN(data)$Negative.affect
+data$Confidence.in.national.government <- kNN(data)$Confidence.in.national.government
+data$Democratic.Quality <- kNN(data)$Democratic.Quality
+data$Delivery.Quality <- kNN(data)$Delivery.Quality
+```
+
+Volvemos de nuevo a ver cuántos valores nulos hay:
+```{r}
+sapply(data, function(x) sum(is.na(x)))
+```
+
+Y efectivamente podemos comprobar que ya no hay ninguno.
+
+## Valores extremos
+Los valores extremos o outliers son aquellos que se alejan mucho de la distribución normal de una variable. Estos valores pueden ser correctos en países que estén en unas condiciones extremas, pero también podrían estar producidos por errores a la hora de recoger la muestra o de rellenar el dataset. Para poder detectarlos en nuestro conjunto de datos se podrían tomar dos caminos. El primero de ellos consistiría en hacer representaciones gráficas como histogramas o diagramas de cajas de las variables. El segundo camino, que será el que tomaremos, será utilizar la función boxplot.stats de R que nos devolverá los outliers de cada variable:
+```{r}
+boxplot.stats(data$Life.Ladder)$out
+boxplot.stats(data$Log.GDP.per.capita)$out
+boxplot.stats(data$Social.support)$out
+boxplot.stats(data$Healthy.life.expectancy.at.birth)$out
+boxplot.stats(data$Freedom.to.make.life.choices)$out
+boxplot.stats(data$Generosity)$out
+boxplot.stats(data$Perceptions.of.corruption)$out
+boxplot.stats(data$Positive.affect)$out
+boxplot.stats(data$Negative.affect)$out
+boxplot.stats(data$Confidence.in.national.government)$out
+boxplot.stats(data$Democratic.Quality)$out
+boxplot.stats(data$Delivery.Quality)$out
+```
+
+Podemos ver que hay bastantes variables que tienen valores extremos, como por ejemplo la esperanza de vida, la percepción de la corrupción o las emociones negativas. No obstante, estos valores en su apariencia podrían ser perfectamente reales, ya que proceden de países subdesarrollados donde la esperanza de vida es muy baja, de países bajo dictaduras o gobiernos que no tienen la confianza de sus ciudadanos o donde hay guerras o enfrentamientos violentos. Por ello, la decisión con respecto a estos valores es dejarlos tal y como están, finalizando de esta forma la parte de limpieza de los datos.
+
+****
+# Análisis de los datos
+****
